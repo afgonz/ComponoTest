@@ -179,7 +179,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7f977097fe5058459cc85b46306f325, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  screenshotCamera: {fileID: 963194227}
+  screenshotCamera: {fileID: 0}
   exportRoutine: {fileID: 602650273}
   screenshotChangeAngle: 22.5
   screenshotSize: {x: 512, y: 512}

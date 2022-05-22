@@ -21,9 +21,10 @@ public class TakeScreenshots : MonoBehaviour
 
     private void Start()
     {
-        if (exportRoutine == null)
+        screenshotCamera = GameObject.FindObjectOfType<Camera>();
+        if (exportRoutine == null || screenshotCamera == null)
         {
-            Debug.LogWarning($"Export Routine missing, add a export reference!");
+            Debug.LogWarning($"Export Routine or camera missing, add a export reference!");
             return;
         }
         else
@@ -67,13 +68,13 @@ public class TakeScreenshots : MonoBehaviour
 
     private IEnumerator RotateAndTakeScreenshot(GameObject model)
     {
-            yield return new WaitForEndOfFrame();
         for(int r = 0; r < 360 / 22.5f; r++)
         {
+            yield return new WaitForEndOfFrame();
             screenshotCamera.targetTexture = RenderTexture.GetTemporary((int)screenshotSize.x, (int)screenshotSize.y, dephtBuffer);
             RenderTexture renderTexture = screenshotCamera.targetTexture;
             Texture2D renderResult = new Texture2D(renderTexture.width, renderTexture.height, TextureFormat.RGB24, false);
-            Rect rect = new Rect(0,0, renderTexture.width, renderTexture.height);
+            Rect rect = new Rect(renderTexture.width / 2, renderTexture.height / 2, renderTexture.width, renderTexture.height);
             renderResult.ReadPixels(rect, 0, 0);
 
             byte[] byteArray = renderResult.EncodeToPNG();
