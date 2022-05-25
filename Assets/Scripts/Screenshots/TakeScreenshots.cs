@@ -53,6 +53,8 @@ public class TakeScreenshots : MonoBehaviour
 
         if(index < listToIterate.AssetReferenceCount)
         {
+            Screen.SetResolution((int)screenshotSize.x, (int)screenshotSize.y, true, 30);
+            
             exportRoutine.StartScreenshotAtIndex(index);
         }
         else
@@ -87,7 +89,7 @@ public class TakeScreenshots : MonoBehaviour
 
             model.transform.eulerAngles = r * screenshotChangeAngle * Vector3.up;
             yield return new WaitForEndOfFrame();
-            screenshotCamera.targetTexture = RenderTexture.GetTemporary(Screen.width, Screen.height, dephtBuffer);
+            screenshotCamera.targetTexture = RenderTexture.GetTemporary((int)screenshotSize.x, (int)screenshotSize.y, dephtBuffer);
             RenderTexture renderTexture = screenshotCamera.targetTexture;
             Texture2D renderResult = new Texture2D(renderTexture.width, renderTexture.height, TextureFormat.RGBA32, false);
             Rect rect = new Rect(objCenter.x - renderTexture.width / 2, objCenter.y - renderTexture.height / 2, renderTexture.width, renderTexture.height);
@@ -125,7 +127,9 @@ public class TakeScreenshots : MonoBehaviour
             bounds.Encapsulate(renderer.bounds);
         }
 
-        screenshotCamera.orthographicSize = Mathf.Max(Math.Abs(bounds.min.x), Math.Abs(bounds.min.y), Math.Abs(bounds.min.z), bounds.max.x, bounds.max.y, bounds.max.z) + viewPortMargin;
+        screenshotCamera.orthographicSize = Mathf.Max(Math.Abs(bounds.min.x), Math.Abs(bounds.min.y), Math.Abs(bounds.min.z), bounds.max.x, bounds.max.y, bounds.max.z) 
+            * (bounds.max.y > bounds.max.x && bounds.max.y > bounds.max.z ? Screen.height / screenshotSize.y : Screen.width / screenshotSize.x)
+            + viewPortMargin;
 
         screenshotCamera.transform.position = bounds.center + (Vector3.forward * -11.11f);
 
