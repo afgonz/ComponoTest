@@ -7,15 +7,12 @@ using UnityEngine;
 public class TakeScreenshots : MonoBehaviour
 {
     [SerializeField]
-    private Camera screenshotCamera;
-    [SerializeField]
-    private ExportRoutine exportRoutine;
-    [SerializeField]
-    private float screenshotChangeAngle = 22.5f;
-    [SerializeField]
-    private Vector2 screenshotSize = new Vector2(500, 500);
-    [SerializeField]
-    private int dephtBuffer = 16;
+    public Camera screenshotCamera;
+    public ExportRoutine exportRoutine;
+    public float screenshotChangeAngle = 22.5f;
+    public Vector2 screenshotSize = new Vector2(512, 512);
+    public int dephtBuffer = 16;
+    public float viewPortMargin = 0.5f;
 
     private int currentIndex = 0;
 
@@ -46,12 +43,13 @@ public class TakeScreenshots : MonoBehaviour
             Debug.Log($"Model is empty or null in list, check the value and try again! /n Skipping to next model.");
             return;
         }
+
         StartCoroutine(RotateAndTakeScreenshot(model));
     }
 
     private void StartTakingScreenshots(int index)
     {
-        SpawnItemList listToIterate = exportRoutine.GetItemList;
+        SpawnItemList listToIterate = exportRoutine.ItemList;
 
         if(index < listToIterate.AssetReferenceCount)
         {
@@ -68,22 +66,40 @@ public class TakeScreenshots : MonoBehaviour
 
     private IEnumerator RotateAndTakeScreenshot(GameObject model)
     {
-        for(int r = 0; r < 360 / 22.5f; r++)
+        if (screenshotCamera == null)
         {
+            screenshotCamera = Camera.main;
+        }
+
+        Bounds? bounds = ResizeCameraToFitModel(model);
+
+        screenshotCamera.clearFlags = CameraClearFlags.SolidColor;
+        screenshotCamera.backgroundColor = new Color(0, 0, 0, 0);
+
+        Vector2 objCenter = screenshotCamera.WorldToScreenPoint(bounds.Value.center);
+
+        for (int r = 0; r < 360 / screenshotChangeAngle; r++)
+        {
+            if (bounds == null)
+            {
+                continue;
+            }
+
+            model.transform.eulerAngles = r * screenshotChangeAngle * Vector3.up;
             yield return new WaitForEndOfFrame();
-            screenshotCamera.targetTexture = RenderTexture.GetTemporary((int)screenshotSize.x, (int)screenshotSize.y, dephtBuffer);
+            screenshotCamera.targetTexture = RenderTexture.GetTemporary(Screen.width, Screen.height, dephtBuffer);
             RenderTexture renderTexture = screenshotCamera.targetTexture;
-            Texture2D renderResult = new Texture2D(renderTexture.width, renderTexture.height, TextureFormat.RGB24, false);
-            Rect rect = new Rect(renderTexture.width / 2, renderTexture.height / 2, renderTexture.width, renderTexture.height);
+            Texture2D renderResult = new Texture2D(renderTexture.width, renderTexture.height, TextureFormat.RGBA32, false);
+            Rect rect = new Rect(objCenter.x - renderTexture.width / 2, objCenter.y - renderTexture.height / 2, renderTexture.width, renderTexture.height);
             renderResult.ReadPixels(rect, 0, 0);
 
             byte[] byteArray = renderResult.EncodeToPNG();
             var parentDirectory = Directory.CreateDirectory($"{Application.dataPath}").Parent;
             var folder = Directory.CreateDirectory($"{parentDirectory}/Output/{model.name.Replace("(Clone)", "")}");
             File.WriteAllBytes($"{parentDirectory}/Output/{model.name.Replace("(Clone)", "")}/frame{GetFrameIndex(r)}.png", byteArray);
-            model.transform.Rotate(r * 22.5f * Vector3.up);
             RenderTexture.ReleaseTemporary(renderTexture);
             screenshotCamera.targetTexture = null;
+            yield return new WaitForEndOfFrame();
         }
 
         Destroy(model);
@@ -92,6 +108,30 @@ public class TakeScreenshots : MonoBehaviour
         StartTakingScreenshots(currentIndex);
     }
 
+    private Bounds? ResizeCameraToFitModel(GameObject model)
+    {
+        Renderer[] modelRenderers = model.GetComponentsInChildren<Renderer>();
+        if (modelRenderers == null)
+        {
+            Debug.LogWarning($"Couldn't find the model renderers skipping model");
+            return null;
+        }
+
+        Bounds bounds = new Bounds(transform.position, Vector3.one);
+
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        foreach (Renderer renderer in renderers)
+        {
+            bounds.Encapsulate(renderer.bounds);
+        }
+
+        screenshotCamera.orthographicSize = Mathf.Max(Math.Abs(bounds.min.x), Math.Abs(bounds.min.y), Math.Abs(bounds.min.z), bounds.max.x, bounds.max.y, bounds.max.z) + viewPortMargin;
+
+        screenshotCamera.transform.position = bounds.center + (Vector3.forward * -11.11f);
+
+        return bounds;
+    }
+    
     private string GetFrameIndex(int r)
     {
         return r < 10 ? "000" + r : r < 100 ? "00" + r : r < 1000 ? "0" + r : r.ToString();

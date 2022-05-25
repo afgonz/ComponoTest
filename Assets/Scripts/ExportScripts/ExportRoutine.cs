@@ -10,7 +10,7 @@ public class ExportRoutine : MonoBehaviour
     private GameObject m_instanceObject = null;
     public Action<GameObject> onModelCreated;
 
-    public SpawnItemList GetItemList { get { return m_itemList; } }
+    public SpawnItemList ItemList { get { return m_itemList; } set { m_itemList = value; } }
 
     public void StartScreenshotAtIndex(int index)
     {
@@ -23,6 +23,7 @@ public class ExportRoutine : MonoBehaviour
 
     private void LoadItemAtIndex(SpawnItemList itemList, int index) 
     {
+
         if (m_instanceObject != null) 
         {
             Destroy(m_instanceObject);
@@ -41,7 +42,7 @@ public class ExportRoutine : MonoBehaviour
         {
             m_instanceObject = Instantiate(obj.Result, spawnPosition, spawnRotation, parentTransform);
 
-            if(m_instanceObject != null)
+            if (m_instanceObject != null)
             {
                 onModelCreated?.Invoke(m_instanceObject);
             }
